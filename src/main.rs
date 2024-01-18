@@ -41,16 +41,21 @@ fn main() {
                 continue;
             }
         };
+        board.display();
         if board.check_win(Spot::Red, position){
             println!("red wins");
             break;
         }
         println!(" . ");
-        let position = board.add_piece(0, Spot::Yellow).unwrap();
+        /*let position = match  board.add_piece(0, Spot::Yellow){
+            Ok(value) => value,
+            Err(_) => 0,
+        };
+        board.display();
         if board.check_win(Spot::Yellow, position){
             println!("yellow wins");
-        }
-        board.display();
+            break;
+        }*/
     }
     
     
@@ -113,7 +118,7 @@ impl Board{
         // Check horizontally
         let mut count = 0;
         for col in 0..COLUMNS as usize {
-            if self.board[col + last_row * COLUMNS as usize] == last_team {
+            if self.board[col + last_col * COLUMNS as usize] == last_team {
                 count += 1;
             } else {
                 count = 0;
@@ -172,7 +177,7 @@ impl Board{
                 return true;
             }
 
-            row += 1;
+            row -= 1;
             col -= 1;
         }
 
