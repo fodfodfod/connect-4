@@ -8,8 +8,7 @@ const COLUMNS: i32 = 7;
 fn main() {
     println!("Hello, world!");
     let mut board = Board::new();
-    let now = SystemTime::now();
-    let mut column = 0;
+    let _ = SystemTime::now();
     /*loop{
         match board.add_piece(column, Spot::Red){
             Ok(_) => (),
@@ -79,17 +78,14 @@ impl Board{
         }
     }
     fn add_piece(&mut self, column: i32, color: Spot) -> Result<i32, &'static str> {
-        if(column >= COLUMNS){
+        if column >= COLUMNS {
             return Err("column to high");
         }
         let mut row = 0;
         while row < ROWS {
-            match self.board[(column as usize) + (COLUMNS * row) as usize ] {
-                Spot::Blank => {
-                    self.board[(column as usize) + (COLUMNS* row) as usize ] = color;
-                    return Ok(column + (COLUMNS* row));
-                }
-                _ => (),
+            if self.board[(column as usize) + (COLUMNS * row) as usize] == Spot::Blank{
+                self.board[(column as usize) + (COLUMNS* row) as usize ] = color;
+                return Ok(column + (COLUMNS* row));
             }
             row += 1;
         }
@@ -166,7 +162,7 @@ impl Board{
         count = 0;
         let mut row = last_row as i32 + last_col as i32;
         let mut col = COLUMNS - 1;
-        while row >= 0 && row < ROWS && col >= 0 {
+        while (0..ROWS).contains(&row) && col >= 0 {
             if self.board[(col + row * COLUMNS ) as usize] == last_team {
                 count += 1;
             } else {
