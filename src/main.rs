@@ -106,41 +106,46 @@ impl Board{
         println!("0 1 2 3 4 5 6 7");
     }
     fn check_win(&self, last_team: Spot, last_piece: i32) -> bool{
+        println!("score is: {}", self.count_score(last_team, last_piece));
+        return self.count_score(last_team, last_piece) >= 4;
+    }
+    fn count_score(&self, last_team: Spot, last_piece: i32) -> i32{
         let last_row = (last_piece % COLUMNS) as usize;
         //println!("last row {}", last_row);
         let last_col = (last_piece / COLUMNS) as usize;
         //println!("last column {}", last_col);
 
         // Check horizontally
+        let mut max_count = 0;
         let mut count = 0;
+        let mut local_max = 0;
         for col in 0..COLUMNS as usize {
             if self.board[col + last_col * COLUMNS as usize] == last_team {
                 count += 1;
             } else {
                 count = 0;
             }
+            if count > local_max {local_max = count;}
 
-            if count >= 4 {
-                return true;
-            }
         }
-
-        // Check vertically
+        if local_max > max_count {max_count = local_max;}
         count = 0;
+        local_max = 0;
+        // Check vertically
         for row in 0..ROWS as usize {
             if self.board[last_row + row * COLUMNS as usize] == last_team {
                 count += 1;
             } else {
                 count = 0;
             }
+            if count > local_max {local_max = count;}
 
-            if count >= 4 {
-                return true;
-            }
         }
 
         // Check diagonally (from top-left to bottom-right)
         count = 0;
+        if local_max > max_count {max_count = local_max;}
+        local_max = 0;
         let mut row = last_row as i32 - last_col as i32;
         let mut col = 0;
         while row < ROWS && col < COLUMNS {
@@ -150,16 +155,16 @@ impl Board{
                 count = 0;
             }
 
-            if count >= 4 {
-                return true;
-            }
 
+            if count > local_max {local_max = count;}
             row += 1;
             col += 1;
         }
 
         // Check diagonally (from top-right to bottom-left)
         count = 0;
+        if local_max > max_count {max_count = local_max;}
+        local_max = 0;
         let mut row = last_row as i32 + last_col as i32;
         let mut col = COLUMNS - 1;
         while (0..ROWS).contains(&row) && col >= 0 {
@@ -169,14 +174,14 @@ impl Board{
                 count = 0;
             }
 
-            if count >= 4 {
-                return true;
-            }
 
+            if count > local_max {local_max = count;}
             row -= 1;
             col -= 1;
         }
+        if local_max > max_count {max_count = local_max;}
+        if count > max_count {max_count = count;}
+        return max_count;
 
-        false
     }
 }
