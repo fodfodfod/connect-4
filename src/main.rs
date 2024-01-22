@@ -1,15 +1,19 @@
-use std::result::Result;
-use std::time::SystemTime;
+use std::result::Result; use std::time::SystemTime;
 //number of rows
 const ROWS: i32 = 6;
 //number of columns
 const COLUMNS: i32 = 7;
+// is half of actual depth
+const DEPTH: usize = 3;
+
  
 fn main() {
     println!("Hello, world!");
     let mut board = Board::new();
-    let _ = SystemTime::now();
-    /*loop{
+    /*
+    let now = SystemTime::now();
+    let mut column = 0;
+    loop{
         match board.add_piece(column, Spot::Red){
             Ok(_) => (),
             Err(_) => column += 1
@@ -17,6 +21,9 @@ fn main() {
         if column > 7{
             break;
         }
+        
+        board.check_win(Spot::Red, 0,);
+        
     }
     println!("{}", now.elapsed().unwrap().as_nanos());
     */
@@ -26,7 +33,7 @@ fn main() {
         println!("enter your position");
         let mut user_input = String::new();
         let _ = std::io::stdin().read_line(&mut user_input);
-        println!("{}", user_input.pop().unwrap());
+        user_input.pop();
         let position: i32 = match user_input.parse::<i32>(){
             Ok(value) => match board.add_piece(value, Spot::Red){
                 Ok(position) => position,
@@ -40,12 +47,17 @@ fn main() {
                 continue;
             }
         };
+        if DEPTH %2 == 0{
+            panic!("DEPTH MUST BE ODD");
+        }
         board.display();
         if board.check_win(Spot::Red, position){
             println!("red wins");
             break;
         }
-        println!(" . ");
+        println!("AI going");
+        board.add_piece(board.find_next_move(Spot::Yellow), Spot::Yellow).unwrap();
+        board.display();
         /*let position = match  board.add_piece(0, Spot::Yellow){
             Ok(value) => value,
             Err(_) => 0,
@@ -54,9 +66,10 @@ fn main() {
         if board.check_win(Spot::Yellow, position){
             println!("yellow wins");
             break;
-        }*/
+        }
     }
-    
+    */
+    }
     
 }
 #[derive(Clone, Copy, PartialEq)]
@@ -66,11 +79,23 @@ enum Spot{
     Blank
 }
 
-
+#[derive(Clone, Copy)]
 struct Board{
     board: [Spot; (ROWS * COLUMNS) as usize],
 }
 
+fn add_one(array: &mut [i32] ){
+    
+    array[0] += 1;
+    for i in 0..DEPTH{
+        if array[i] == COLUMNS{
+            array[i] = 0;
+            if i < DEPTH -1{
+                array[i+1]+=1;
+            }
+        }
+    }
+}
 impl Board{
     fn new() -> Self {
         Board {
@@ -105,8 +130,53 @@ impl Board{
         println!();
         println!("0 1 2 3 4 5 6 7");
     }
+    
+    fn find_next_move(&self, team: Spot) -> i32{
+        let mut best_array: (i32, [i32; DEPTH]) = (0, [0; DEPTH]);
+        let mut array: (i32, [i32; DEPTH]) = (0, [0; DEPTH]);
+        loop{
+            //println!("{}", array.0);
+            //println!("{}, {}, {}, {}, {}", array.1[0], array.1[1], array.1[2], array.1[3], array.1[4]);
+
+            //increase array by 1
+            add_one(&mut array.1);
+            if array.1[DEPTH -1] == COLUMNS - 1{
+                break;
+            }
+            let mut board = self.to_owned();
+            for i in 0..DEPTH{
+                let mut board = self.to_owned();
+                let local_team;
+                if i % 2 == 0{
+                    local_team = team;
+                }
+                else{
+                    local_team =  match team{
+                        Spot::Red => Spot::Yellow,
+                        Spot::Yellow => Spot::Red,
+                        _ => panic!("not a valid team")
+                    };
+                }
+                let position = board.add_piece(array.1[i], local_team);
+                match position{
+                    Err(_) =>break,
+                    Ok(value) => {
+                        //if a better solution is found
+                        if i == DEPTH -1 && self.count_score(local_team, value) > best_array.0{
+                            println!("better solution found");
+                            best_array.1=array.1;
+                        }
+                    }
+                }
+            }
+        }
+
+        //return board.clone().add_piece(best_array.1[0], team).unwrap();
+        return best_array.1[0];
+        
+
+    }
     fn check_win(&self, last_team: Spot, last_piece: i32) -> bool{
-        println!("score is: {}", self.count_score(last_team, last_piece));
         return self.count_score(last_team, last_piece) >= 4;
     }
     fn count_score(&self, last_team: Spot, last_piece: i32) -> i32{
