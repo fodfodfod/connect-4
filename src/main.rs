@@ -103,8 +103,8 @@ impl Board{
         }
     }
     fn add_piece(&mut self, column: i32, color: Spot) -> Result<i32, &'static str> {
-        if column >= COLUMNS {
-            return Err("column to high");
+        if column >= COLUMNS  || column < 0{
+            return Err("column to high or low");
         }
         let mut row = 0;
         while row < ROWS {
@@ -184,15 +184,16 @@ impl Board{
                         Ok(value) => {
                             //if it is the human's turn and they won
                             if i % 2 == 1 && board.count_score(Spot::Red, value) == 4{
+                                //if the human wins it is a bad strat
+                                worst_result.0 = 0;
                                 break;
                             }
                                 
                             //if the ai does worse this round, aka the human does better
                             if i == DEPTH -1 && self.count_score(Spot::Yellow, value) < worst_result.0{
-                                //worst_result.1 = ai_array.1[i/2];
                                 worst_result.1 = ai_array.1[0];
                                 worst_result.0 = self.count_score(Spot::Yellow, value);
-                                println!("worse solution found: {} at {}", worst_result.0, worst_result.1 );
+                                //println!("worse solution found: {} at {}", worst_result.0, worst_result.1 );
                             }
                         }
                     }
@@ -201,6 +202,7 @@ impl Board{
             // if playing against the best human is still better than the current best move,
             // replace it
             if worst_result.0 > best_position.0{
+            //if worst_result.0 ==4{
                 println!("new solution found");
                 println!("better solution found: {} at {}", worst_result.0, worst_result.1 );
                 best_position = worst_result;
