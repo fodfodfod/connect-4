@@ -189,7 +189,8 @@ impl Board{
                                 
                             //if the ai does worse this round, aka the human does better
                             if i == DEPTH -1 && self.count_score(Spot::Yellow, value) < worst_result.0{
-                                worst_result.1 = ai_array.1[i/2];
+                                //worst_result.1 = ai_array.1[i/2];
+                                worst_result.1 = ai_array.1[0];
                                 worst_result.0 = self.count_score(Spot::Yellow, value);
                                 println!("worse solution found: {} at {}", worst_result.0, worst_result.1 );
                             }
