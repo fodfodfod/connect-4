@@ -3,8 +3,8 @@ use std::result::Result; use std::time::SystemTime;
 const ROWS: i32 = 6;
 //number of columns
 const COLUMNS: i32 = 7;
-// is half of actual depth
-const DEPTH: usize = 3;
+// MUST BE ODD
+const DEPTH: usize = 7;
 
  
 fn main() {
@@ -87,10 +87,10 @@ struct Board{
 fn add_one(array: &mut [i32] ){
     
     array[0] += 1;
-    for i in 0..DEPTH{
+    for i in 0..array.len(){
         if array[i] == COLUMNS{
             array[i] = 0;
-            if i < DEPTH -1{
+            if i < array.len() -1{
                 array[i+1]+=1;
             }
         }
@@ -132,49 +132,84 @@ impl Board{
     }
     
     fn find_next_move(&self, team: Spot) -> i32{
-        let mut best_array: (i32, [i32; DEPTH]) = (0, [0; DEPTH]);
-        let mut array: (i32, [i32; DEPTH]) = (0, [0; DEPTH]);
+        //an array of all the moves the ai will play, the first item is not used 
+        let mut ai_array: (i32, [i32; (DEPTH/2) + 1]) = (0, [0; (DEPTH/2) + 1]);
+        //first is score, second is position
+        let mut best_position: (i32, i32) = (-1, -1);
+        //looping over all possible ai moves
         loop{
-            //println!("{}", array.0);
-            //println!("{}, {}, {}, {}, {}", array.1[0], array.1[1], array.1[2], array.1[3], array.1[4]);
 
             //increase array by 1
-            add_one(&mut array.1);
-            if array.1[DEPTH -1] == COLUMNS - 1{
+            add_one(&mut ai_array.1);
+            //break if all values are full
+            if ai_array.1[(DEPTH/2) -0] == COLUMNS - 1{
                 break;
             }
-            let mut board = self.to_owned();
-            for i in 0..DEPTH{
-                let mut board = self.to_owned();
-                let local_team;
-                if i % 2 == 0{
-                    local_team = team;
+            let mut user_array: (i32, [i32; (DEPTH/2) ]) = (0, [0; DEPTH/2]);
+            // worst result records the worst the ai does with this set of moves
+            let mut worst_result: (i32, i32) = (5, 0);
+            // looping over all possible ai moves
+            loop{
+                add_one(&mut user_array.1);
+                //break if all values are full
+                if user_array.1[DEPTH/2 -1] == COLUMNS -1{
+                    break;
                 }
-                else{
-                    local_team =  match team{
-                        Spot::Red => Spot::Yellow,
-                        Spot::Yellow => Spot::Red,
+                //create a copy of the board
+                let mut board = self.to_owned();
+                //add all the moves to the board
+                for i in 0..DEPTH{
+                
+                    //the team playing this move
+                    let local_team;
+                    if i % 2 == 0{
+                        local_team = team;
+                    }
+                    else{
+                        local_team =  match team{
+                            Spot::Red => Spot::Yellow,
+                            Spot::Yellow => Spot::Red,
+                            _ => panic!("not a valid team")
+                        };
+                    }
+                    //the position in the board where the piece landed
+                    let position = match local_team{
+                        Spot::Red => board.add_piece(user_array.1[i/2], Spot::Red),
+                        Spot::Yellow => board.add_piece(ai_array.1[i/2], Spot::Yellow),
                         _ => panic!("not a valid team")
                     };
-                }
-                let position = board.add_piece(array.1[i], local_team);
-                match position{
-                    Err(_) =>break,
-                    Ok(value) => {
-                        //if a better solution is found
-                        if i == DEPTH -1 && self.count_score(local_team, value) > best_array.0{
-                            println!("better solution found");
-                            best_array.1=array.1;
+                    
+                    match position{
+                        Err(_) =>break,
+                        Ok(value) => {
+                            //if it is the human's turn and they won
+                            if i % 2 == 1 && board.count_score(Spot::Red, value) == 4{
+                                break;
+                            }
+                                
+                            //if the ai does worse this round, aka the human does better
+                            if i == DEPTH -1 && self.count_score(Spot::Yellow, value) < worst_result.0{
+                                worst_result.1 = ai_array.1[i/2];
+                                worst_result.0 = self.count_score(Spot::Yellow, value);
+                                println!("worse solution found: {} at {}", worst_result.0, worst_result.1 );
+                            }
                         }
                     }
                 }
             }
+            // if playing against the best human is still better than the current best move,
+            // replace it
+            if worst_result.0 > best_position.0{
+                println!("new solution found");
+                println!("better solution found: {} at {}", worst_result.0, worst_result.1 );
+                best_position = worst_result;
+                //best_position.0 = worst_result.0;
+                //best_position.1 = worst_result.1;
+            }
         }
 
-        //return board.clone().add_piece(best_array.1[0], team).unwrap();
-        return best_array.1[0];
+        return best_position.1;
         
-
     }
     fn check_win(&self, last_team: Spot, last_piece: i32) -> bool{
         return self.count_score(last_team, last_piece) >= 4;
