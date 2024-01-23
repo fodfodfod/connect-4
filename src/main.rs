@@ -1,4 +1,4 @@
-use std::result::Result; use std::time::SystemTime;
+use std::result::Result; 
 //number of rows
 const ROWS: i32 = 6;
 //number of columns
@@ -51,12 +51,17 @@ fn main() {
             panic!("DEPTH MUST BE ODD");
         }
         board.display();
+        println!("the user score is: {}", board.count_score(Spot::Red, position)); 
         if board.check_win(Spot::Red, position){
             println!("red wins");
             break;
         }
         println!("AI going");
-        board.add_piece(board.find_next_move(Spot::Yellow), Spot::Yellow).unwrap();
+        let position = board.add_piece(board.find_next_move(Spot::Yellow), Spot::Yellow).unwrap();
+        if board.check_win(Spot::Yellow, position){
+            println!("yellow wins");
+            break;
+        }
         board.display();
         /*let position = match  board.add_piece(0, Spot::Yellow){
             Ok(value) => value,
@@ -201,6 +206,7 @@ impl Board{
             }
             // if playing against the best human is still better than the current best move,
             // replace it
+            println!("the worst result is: {}", worst_result.0);
             if worst_result.0 > best_position.0{
             //if worst_result.0 ==4{
                 println!("new solution found");
@@ -211,7 +217,7 @@ impl Board{
             }
         }
 
-        return best_position.1;
+        best_position.1
         
     }
     fn check_win(&self, last_team: Spot, last_piece: i32) -> bool{
