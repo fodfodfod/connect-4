@@ -89,15 +89,34 @@ struct Board{
     board: [Spot; (ROWS * COLUMNS) as usize],
 }
 
-fn add_one(array: &mut [i32] ){
+fn add_one(array: &mut [i32], start_at_zero: bool ){
     
-    array[0] += 1;
-    for i in 0..array.len(){
-        if array[i] == COLUMNS{
-            array[i] = 0;
-            if i < array.len() -1{
-                array[i+1]+=1;
+    if start_at_zero{
+        array[0] += 1;
+        let mut i = 0;
+        loop{
+            if array[i] == COLUMNS{
+                array[i] = 0;
+                if i < array.len() -1{
+                    array[i+2]+=1;
+                }
             }
+            i += 2;
+            if i >= array.len(){break;}
+        }
+    }
+    else {
+        array[1] += 1;
+        let mut i = 1;
+        loop{
+            if array[i] == COLUMNS{
+                array[i] = 0;
+                if i < array.len() -1{
+                    array[i+2]+=1;
+                }
+            }
+            i += 2;
+            if i >= array.len() -1 {break;}
         }
     }
 }
@@ -138,26 +157,26 @@ impl Board{
     
     fn find_next_move(&self, team: Spot) -> i32{
         //an array of all the moves the ai will play, the first item is not used 
-        let mut ai_array: (i32, [i32; (DEPTH/2) + 1]) = (0, [0; (DEPTH/2) + 1]);
+        let mut ai_array: (i32, [i32; DEPTH  ]) = (0, [0; DEPTH]);
         //first is score, second is position
         let mut best_position: (i32, i32) = (-1, -1);
         //looping over all possible ai moves
         loop{
 
             //increase array by 1
-            add_one(&mut ai_array.1);
+            add_one(&mut ai_array.1, true);
             //break if all values are full
-            if ai_array.1[(DEPTH/2) -0] == COLUMNS - 1{
+            if ai_array.1[DEPTH -1] == COLUMNS - 1{
                 break;
             }
-            let mut user_array: (i32, [i32; (DEPTH/2) ]) = (0, [0; DEPTH/2]);
+            let mut user_array: (i32, [i32; DEPTH]) = (0, [0; DEPTH]);
             // worst result records the worst the ai does with this set of moves
             let mut worst_result: (i32, i32) = (5, 0);
             // looping over all possible ai moves
             loop{
-                add_one(&mut user_array.1);
+                add_one(&mut user_array.1, false);
                 //break if all values are full
-                if user_array.1[DEPTH/2 -1] == COLUMNS -1{
+                if user_array.1[DEPTH-2] == COLUMNS -1{
                     break;
                 }
                 //create a copy of the board
@@ -179,8 +198,8 @@ impl Board{
                     }
                     //the position in the board where the piece landed
                     let position = match local_team{
-                        Spot::Red => board.add_piece(user_array.1[i/2], Spot::Red),
-                        Spot::Yellow => board.add_piece(ai_array.1[i/2], Spot::Yellow),
+                        Spot::Red => board.add_piece(user_array.1[i], Spot::Red),
+                        Spot::Yellow => board.add_piece(ai_array.1[i], Spot::Yellow),
                         _ => panic!("not a valid team")
                     };
                     
