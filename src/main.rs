@@ -1,10 +1,11 @@
 use std::result::Result; 
+use std::time::SystemTime;
 //number of rows
 const ROWS: i32 = 6;
 //number of columns
 const COLUMNS: i32 = 7;
 // MUST BE ODD
-const DEPTH: usize = 7;
+const DEPTH: usize = 9;
 
  
 fn main() {
@@ -57,7 +58,9 @@ fn main() {
             break;
         }
         println!("AI going");
+        let now = SystemTime::now();
         let position = board.add_piece(board.find_next_move(Spot::Yellow), Spot::Yellow).unwrap();
+        println!("the ai took {} seconds", now.elapsed().unwrap().as_secs());
         if board.check_win(Spot::Yellow, position){
             println!("yellow wins");
             break;
@@ -161,7 +164,7 @@ impl Board{
         //first is score, second is position
         let mut best_position: (i32, i32) = (-1, -1);
         //looping over all possible ai moves
-        loop{
+        'ai: loop {
 
             //increase array by 1
             add_one(&mut ai_array.1, true);
@@ -173,7 +176,7 @@ impl Board{
             // worst result records the worst the ai does with this set of moves
             let mut worst_result: (i32, i32) = (5, 0);
             // looping over all possible ai moves
-            loop{
+            'human: loop{
                 add_one(&mut user_array.1, false);
                 //break if all values are full
                 if user_array.1[DEPTH-2] == COLUMNS -1{
@@ -209,8 +212,8 @@ impl Board{
                             //if it is the human's turn and they won
                             if i % 2 == 1 && board.count_score(Spot::Red, value) == 4{
                                 //if the human wins it is a bad strat
-                                worst_result.0 = 0;
-                                break;
+                                worst_result.0 = -1;
+                                break 'human;
                             }
                                 
                             //if the ai does worse this round, aka the human does better
@@ -225,7 +228,7 @@ impl Board{
             }
             // if playing against the best human is still better than the current best move,
             // replace it
-            println!("the worst result is: {}", worst_result.0);
+            //println!("the worst result is: {}", worst_result.0);
             if worst_result.0 > best_position.0{
             //if worst_result.0 ==4{
                 println!("new solution found");
@@ -236,6 +239,7 @@ impl Board{
             }
         }
 
+        println!("the best position is: {}", best_position.1);
         best_position.1
         
     }
