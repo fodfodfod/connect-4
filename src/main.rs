@@ -212,8 +212,6 @@ impl Board{
                             //if it is the human's turn and they won
                             if i % 2 == 1 && board.count_score(Spot::Red, value) == 4{
                                 //if the human wins it is a bad strat
-                                worst_result.0 = -1;
-                                break 'human;
                             }
                                 
                             //if the ai does worse this round, aka the human does better
