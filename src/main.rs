@@ -33,7 +33,7 @@ fn main() {
         let mut user_input = String::new();
         let _ = std::io::stdin().read_line(&mut user_input);
         user_input.pop();
-        let position: i32 = match user_input.parse::<i32>() {
+        let position = match user_input.parse::<i32>() {
             Ok(value) => match board.add_piece(value, Spot::Red) {
                 Ok(position) => position,
                 Err(..) => {
@@ -47,11 +47,7 @@ fn main() {
             }
         };
         board.display();
-        println!(
-            "the user score is: {}",
-            board.count_score(Spot::Red, position)
-        );
-        if board.check_win(Spot::Red, position) {
+        if board.check_win(Spot::Red, position.0, position.1) {
             println!("red wins");
             break;
         }
@@ -61,7 +57,7 @@ fn main() {
             .add_piece(board.find_next_move(Spot::Yellow), Spot::Yellow)
             .unwrap();
         println!("the ai took {} seconds", now.elapsed().unwrap().as_secs());
-        if board.check_win(Spot::Yellow, position) {
+        if board.check_win(Spot::Yellow, position.0, position.1) {
             println!("yellow wins");
             break;
         }
@@ -130,7 +126,7 @@ impl Board {
             board: [Spot::Blank; (ROWS * COLUMNS) as usize],
         }
     }
-    fn add_piece(&mut self, column: i32, color: Spot) -> Result<i32, &'static str> {
+    fn add_piece(&mut self, column: i32, color: Spot) -> Result<(i32, i32), &'static str> {
         if column >= COLUMNS || column < 0 {
             return Err("column to high or low");
         }
@@ -138,7 +134,8 @@ impl Board {
         while row < ROWS {
             if self.board[(column as usize) + (COLUMNS * row) as usize] == Spot::Blank {
                 self.board[(column as usize) + (COLUMNS * row) as usize] = color;
-                return Ok(column + (COLUMNS * row));
+                //return Ok(column + (COLUMNS * row));
+                return Ok((row, column));
             }
             row += 1;
         }
@@ -212,95 +209,16 @@ impl Board {
         }
         return string;
     }
-    fn check_win(&self, last_team: Spot, last_piece: i32) -> bool {
-        return self.count_score(last_team, last_piece) >= 4;
-    }
-    fn count_score(&self, last_team: Spot, last_piece: i32) -> i32 {
-        let last_row = (last_piece % COLUMNS) as usize;
-        //println!("last row {}", last_row);
-        let last_col = (last_piece / COLUMNS) as usize;
-        //println!("last column {}", last_col);
+    fn check_win(&self, last_team: Spot, row: i32, column: i32) -> bool {
+        let client = reqwest::blocking::Client::new();
+        let last_team_number = match last_team {Spot::Red => 1, Spot::Yellow => 2, _ => panic!()};
+        let mut result =
+            client.post(format!("https://kevinalbs.com/connect4/back-end/index.php/hasWon?board_data={}&player={}&i={}&j={}", self.to_string(),last_team_number, row, column))
+            //client.post("https://kevinalbs.com/connect4/back-end/index.php/getMoves")
+                //.json(&map)
+                .send()
+                .unwrap().text().unwrap().parse::<bool>();
+        return result.unwrap();
 
-        // Check horizontally
-        let mut max_count = 0;
-        let mut count = 0;
-        let mut local_max = 0;
-        for col in 0..COLUMNS as usize {
-            if self.board[col + last_col * COLUMNS as usize] == last_team {
-                count += 1;
-            } else {
-                count = 0;
-            }
-            if count > local_max {
-                local_max = count;
-            }
-        }
-        if local_max > max_count {
-            max_count = local_max;
-        }
-        count = 0;
-        local_max = 0;
-        // Check vertically
-        for row in 0..ROWS as usize {
-            if self.board[last_row + row * COLUMNS as usize] == last_team {
-                count += 1;
-            } else {
-                count = 0;
-            }
-            if count > local_max {
-                local_max = count;
-            }
-        }
-
-        // Check diagonally (from top-left to bottom-right)
-        count = 0;
-        if local_max > max_count {
-            max_count = local_max;
-        }
-        local_max = 0;
-        let mut row = last_row as i32 - last_col as i32;
-        let mut col = 0;
-        while row < ROWS && col < COLUMNS {
-            if row >= 0 && self.board[(col + row * COLUMNS) as usize] == last_team {
-                count += 1;
-            } else {
-                count = 0;
-            }
-
-            if count > local_max {
-                local_max = count;
-            }
-            row += 1;
-            col += 1;
-        }
-
-        // Check diagonally (from top-right to bottom-left)
-        count = 0;
-        if local_max > max_count {
-            max_count = local_max;
-        }
-        local_max = 0;
-        let mut row = last_row as i32 + last_col as i32;
-        let mut col = COLUMNS - 1;
-        while (0..ROWS).contains(&row) && col >= 0 {
-            if self.board[(col + row * COLUMNS) as usize] == last_team {
-                count += 1;
-            } else {
-                count = 0;
-            }
-
-            if count > local_max {
-                local_max = count;
-            }
-            row -= 1;
-            col -= 1;
-        }
-        if local_max > max_count {
-            max_count = local_max;
-        }
-        if count > max_count {
-            max_count = count;
-        }
-        return max_count;
     }
 }
