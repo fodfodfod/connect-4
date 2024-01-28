@@ -1,13 +1,11 @@
-use std::result::Result; 
+use std::collections::HashMap;
+use std::result::Result;
 use std::time::SystemTime;
 //number of rows
-const ROWS: i32 = 6;
+const ROWS: i32 = 7;
 //number of columns
 const COLUMNS: i32 = 7;
-// MUST BE ODD
-const DEPTH: usize = 9;
 
- 
 fn main() {
     println!("Hello, world!");
     let mut board = Board::new();
@@ -22,9 +20,9 @@ fn main() {
         if column > 7{
             break;
         }
-        
+
         board.check_win(Spot::Red, 0,);
-        
+
     }
     println!("{}", now.elapsed().unwrap().as_nanos());
     */
@@ -35,12 +33,12 @@ fn main() {
         let mut user_input = String::new();
         let _ = std::io::stdin().read_line(&mut user_input);
         user_input.pop();
-        let position: i32 = match user_input.parse::<i32>(){
-            Ok(value) => match board.add_piece(value, Spot::Red){
+        let position: i32 = match user_input.parse::<i32>() {
+            Ok(value) => match board.add_piece(value, Spot::Red) {
                 Ok(position) => position,
                 Err(..) => {
                     println!("you bad (not a valid number)");
-                    continue
+                    continue;
                 }
             },
             _ => {
@@ -48,96 +46,99 @@ fn main() {
                 continue;
             }
         };
-        if DEPTH %2 == 0{
-            panic!("DEPTH MUST BE ODD");
-        }
         board.display();
-        println!("the user score is: {}", board.count_score(Spot::Red, position)); 
-        if board.check_win(Spot::Red, position){
+        println!(
+            "the user score is: {}",
+            board.count_score(Spot::Red, position)
+        );
+        if board.check_win(Spot::Red, position) {
             println!("red wins");
             break;
         }
         println!("AI going");
         let now = SystemTime::now();
-        let position = board.add_piece(board.find_next_move(Spot::Yellow), Spot::Yellow).unwrap();
+        let position = board
+            .add_piece(board.find_next_move(Spot::Yellow), Spot::Yellow)
+            .unwrap();
         println!("the ai took {} seconds", now.elapsed().unwrap().as_secs());
-        if board.check_win(Spot::Yellow, position){
+        if board.check_win(Spot::Yellow, position) {
             println!("yellow wins");
             break;
         }
         board.display();
         /*let position = match  board.add_piece(0, Spot::Yellow){
-            Ok(value) => value,
-            Err(_) => 0,
-        };
-        board.display();
-        if board.check_win(Spot::Yellow, position){
-            println!("yellow wins");
-            break;
+                Ok(value) => value,
+                Err(_) => 0,
+            };
+            board.display();
+            if board.check_win(Spot::Yellow, position){
+                println!("yellow wins");
+                break;
+            }
         }
+        */
     }
-    */
-    }
-    
 }
 #[derive(Clone, Copy, PartialEq)]
-enum Spot{
+enum Spot {
     Red,
     Yellow,
-    Blank
+    Blank,
 }
 
 #[derive(Clone, Copy)]
-struct Board{
+struct Board {
     board: [Spot; (ROWS * COLUMNS) as usize],
 }
 
-fn add_one(array: &mut [i32], start_at_zero: bool ){
-    
-    if start_at_zero{
+fn add_one(array: &mut [i32], start_at_zero: bool) {
+    if start_at_zero {
         array[0] += 1;
         let mut i = 0;
-        loop{
-            if array[i] == COLUMNS{
+        loop {
+            if array[i] == COLUMNS {
                 array[i] = 0;
-                if i < array.len() -1{
-                    array[i+2]+=1;
+                if i < array.len() - 1 {
+                    array[i + 2] += 1;
                 }
             }
             i += 2;
-            if i >= array.len(){break;}
+            if i >= array.len() {
+                break;
+            }
         }
-    }
-    else {
+    } else {
         array[1] += 1;
         let mut i = 1;
-        loop{
-            if array[i] == COLUMNS{
+        loop {
+            if array[i] == COLUMNS {
                 array[i] = 0;
-                if i < array.len() -1{
-                    array[i+2]+=1;
+                if i < array.len() - 1 {
+                    array[i + 2] += 1;
                 }
             }
             i += 2;
-            if i >= array.len() -1 {break;}
+            if i >= array.len() - 1 {
+                break;
+            }
         }
     }
 }
-impl Board{
+impl Board {
     fn new() -> Self {
         Board {
             board: [Spot::Blank; (ROWS * COLUMNS) as usize],
         }
     }
     fn add_piece(&mut self, column: i32, color: Spot) -> Result<i32, &'static str> {
-        if column >= COLUMNS  || column < 0{
+        if column >= COLUMNS || column < 0 {
             return Err("column to high or low");
         }
         let mut row = 0;
         while row < ROWS {
-            if self.board[(column as usize) + (COLUMNS * row) as usize] == Spot::Blank{
-                self.board[(column as usize) + (COLUMNS* row) as usize ] = color;
-                return Ok(column + (COLUMNS* row));
+            if self.board[(column as usize) + (COLUMNS * row) as usize] == Spot::Blank {
+                self.board[(column as usize) + (COLUMNS * row) as usize] = color;
+                return Ok(column + (COLUMNS * row));
             }
             row += 1;
         }
@@ -157,94 +158,64 @@ impl Board{
         println!();
         println!("0 1 2 3 4 5 6 7");
     }
-    
-    fn find_next_move(&self, team: Spot) -> i32{
-        //an array of all the moves the ai will play, the first item is not used 
-        let mut ai_array: (i32, [i32; DEPTH  ]) = (0, [0; DEPTH]);
-        //first is score, second is position
-        let mut best_position: (i32, i32) = (-1, -1);
-        //looping over all possible ai moves
-        'ai: loop {
 
-            //increase array by 1
-            add_one(&mut ai_array.1, true);
-            //break if all values are full
-            if ai_array.1[DEPTH -1] == COLUMNS - 1{
-                break;
-            }
-            let mut user_array: (i32, [i32; DEPTH]) = (0, [0; DEPTH]);
-            // worst result records the worst the ai does with this set of moves
-            let mut worst_result: (i32, i32) = (5, 0);
-            // looping over all possible ai moves
-            'human: loop{
-                add_one(&mut user_array.1, false);
-                //break if all values are full
-                if user_array.1[DEPTH-2] == COLUMNS -1{
-                    break;
-                }
-                //create a copy of the board
-                let mut board = self.to_owned();
-                //add all the moves to the board
-                for i in 0..DEPTH{
-                
-                    //the team playing this move
-                    let local_team;
-                    if i % 2 == 0{
-                        local_team = team;
-                    }
-                    else{
-                        local_team =  match team{
-                            Spot::Red => Spot::Yellow,
-                            Spot::Yellow => Spot::Red,
-                            _ => panic!("not a valid team")
-                        };
-                    }
-                    //the position in the board where the piece landed
-                    let position = match local_team{
-                        Spot::Red => board.add_piece(user_array.1[i], Spot::Red),
-                        Spot::Yellow => board.add_piece(ai_array.1[i], Spot::Yellow),
-                        _ => panic!("not a valid team")
-                    };
-                    
-                    match position{
-                        Err(_) =>break,
-                        Ok(value) => {
-                            //if it is the human's turn and they won
-                            if i % 2 == 1 && board.count_score(Spot::Red, value) == 4{
-                                //if the human wins it is a bad strat
-                            }
-                                
-                            //if the ai does worse this round, aka the human does better
-                            if i == DEPTH -1 && self.count_score(Spot::Yellow, value) < worst_result.0{
-                                worst_result.1 = ai_array.1[0];
-                                worst_result.0 = self.count_score(Spot::Yellow, value);
-                                //println!("worse solution found: {} at {}", worst_result.0, worst_result.1 );
-                            }
-                        }
-                    }
-                }
-            }
-            // if playing against the best human is still better than the current best move,
-            // replace it
-            //println!("the worst result is: {}", worst_result.0);
-            if worst_result.0 > best_position.0{
-            //if worst_result.0 ==4{
-                println!("new solution found");
-                println!("better solution found: {} at {}", worst_result.0, worst_result.1 );
-                best_position = worst_result;
-                //best_position.0 = worst_result.0;
-                //best_position.1 = worst_result.1;
+    fn find_next_move(&self, team: Spot) -> i32 {
+        let client = reqwest::blocking::Client::new();
+
+        //first is position, second is score
+        let mut best_option = (-1000, -1000);
+        let mut options = vec![0, 1, 2, 3, 4, 5, 6];
+        let mut map = HashMap::new();
+        map.insert("board_data".to_string(), self.to_string());
+        map.insert("player".to_string(), "2".to_string());
+
+        println!("the board is: {}", self.to_string());
+        let mut result =
+            client.post(format!("https://kevinalbs.com/connect4/back-end/index.php/getMoves?board_data={}&player=2", self.to_string()))
+            //client.post("https://kevinalbs.com/connect4/back-end/index.php/getMoves")
+                //.json(&map)
+                .send()
+                .unwrap()
+                .json::<HashMap<String, i32>>();
+        for i in result.as_mut().unwrap(){
+            //options.remove(i.0.parse::<usize>().unwrap());
+            options.remove(options.iter().position(|x| *x == i.0.parse::<usize>().unwrap()).unwrap());
+            println!("position: {}, score: {}", i.0, i.1);
+            if i.1 >= &mut best_option.1{
+                best_option.0 = i.0.parse::<i32>().unwrap() ;
+                best_option.1 = *i.1;
             }
         }
-
-        println!("the best position is: {}", best_position.1);
-        best_position.1
-        
+        println!("{:#?}", result);
+        println!("the best column is: {}", best_option.0);
+        println!("the missing option is {:?}", options);
+        return best_option.0;
+        //return options[0].try_into().unwrap();
     }
-    fn check_win(&self, last_team: Spot, last_piece: i32) -> bool{
+    fn to_string(&self) -> String {
+        let mut string = String::new();
+        /*for i in self.board {
+            string.push_str(match i {
+                Spot::Red => "1",
+                Spot::Yellow => "2",
+                Spot::Blank => "0",
+            })
+        }*/
+        for row in (0..ROWS).rev() {
+            for col in (0..COLUMNS){
+                string.push_str(match self.board[((row*7) + col) as usize] {
+                Spot::Red => "1",
+                Spot::Yellow => "2",
+                Spot::Blank => "0",
+            })
+            }
+        }
+        return string;
+    }
+    fn check_win(&self, last_team: Spot, last_piece: i32) -> bool {
         return self.count_score(last_team, last_piece) >= 4;
     }
-    fn count_score(&self, last_team: Spot, last_piece: i32) -> i32{
+    fn count_score(&self, last_team: Spot, last_piece: i32) -> i32 {
         let last_row = (last_piece % COLUMNS) as usize;
         //println!("last row {}", last_row);
         let last_col = (last_piece / COLUMNS) as usize;
@@ -260,10 +231,13 @@ impl Board{
             } else {
                 count = 0;
             }
-            if count > local_max {local_max = count;}
-
+            if count > local_max {
+                local_max = count;
+            }
         }
-        if local_max > max_count {max_count = local_max;}
+        if local_max > max_count {
+            max_count = local_max;
+        }
         count = 0;
         local_max = 0;
         // Check vertically
@@ -273,13 +247,16 @@ impl Board{
             } else {
                 count = 0;
             }
-            if count > local_max {local_max = count;}
-
+            if count > local_max {
+                local_max = count;
+            }
         }
 
         // Check diagonally (from top-left to bottom-right)
         count = 0;
-        if local_max > max_count {max_count = local_max;}
+        if local_max > max_count {
+            max_count = local_max;
+        }
         local_max = 0;
         let mut row = last_row as i32 - last_col as i32;
         let mut col = 0;
@@ -290,33 +267,40 @@ impl Board{
                 count = 0;
             }
 
-
-            if count > local_max {local_max = count;}
+            if count > local_max {
+                local_max = count;
+            }
             row += 1;
             col += 1;
         }
 
         // Check diagonally (from top-right to bottom-left)
         count = 0;
-        if local_max > max_count {max_count = local_max;}
+        if local_max > max_count {
+            max_count = local_max;
+        }
         local_max = 0;
         let mut row = last_row as i32 + last_col as i32;
         let mut col = COLUMNS - 1;
         while (0..ROWS).contains(&row) && col >= 0 {
-            if self.board[(col + row * COLUMNS ) as usize] == last_team {
+            if self.board[(col + row * COLUMNS) as usize] == last_team {
                 count += 1;
             } else {
                 count = 0;
             }
 
-
-            if count > local_max {local_max = count;}
+            if count > local_max {
+                local_max = count;
+            }
             row -= 1;
             col -= 1;
         }
-        if local_max > max_count {max_count = local_max;}
-        if count > max_count {max_count = count;}
+        if local_max > max_count {
+            max_count = local_max;
+        }
+        if count > max_count {
+            max_count = count;
+        }
         return max_count;
-
     }
 }
